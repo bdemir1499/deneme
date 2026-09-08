@@ -1,3 +1,17 @@
+// OLTALAMA (PHISHING) KORUMASI: Site kopyalanırsa çalışmayı durdur
+const allowedDomains = ["bdemir1499.github.io", "localhost", "127.0.0.1", ""];
+if (!allowedDomains.includes(window.location.hostname)) {
+    document.documentElement.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#ff4c4c; color:white; font-family:sans-serif; text-align:center; padding: 20px;">
+            <h1 style="font-size: 50px;">🛑 DİKKAT! SAHTE SİTE 🛑</h1>
+            <h2>Bu web sitesi, orijinal yapımcısından izinsiz kopyalanmış SAHTE ve TEHLİKELİ bir oltalama sitesidir.</h2>
+            <p style="font-size: 20px;">Lütfen hiçbir şifrenizi girmeyin, aksi takdirde tüm bilgileriniz çalınabilir.</p>
+            <a href="https://bdemir1499.github.io" style="color: yellow; font-size: 24px; margin-top: 20px; font-weight: bold; text-decoration: underline;">ORİJİNAL VE GÜVENLİ SİTEYE GİTMEK İÇİN BURAYA TIKLAYIN</a>
+        </div>
+    `;
+    throw new Error("Phishing attempt blocked! Site domain does not match.");
+}
+
 // Gerçek Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyBOK2yl7gUhwntR6SznK8F3obWGP9uScMU",
