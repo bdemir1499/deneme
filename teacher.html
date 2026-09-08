@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğretmen Paneli - Deneme Takip Sistemi</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+            Deneme Takip | Öğretmen
+        </a>
+        <div class="flex align-center" style="gap: 1rem;">
+            <span id="userNameDisplay" style="font-weight: 500;">Öğretmen</span>
+            <button class="btn btn-outline" style="padding: 0.5rem 1rem;" onclick="logout()">Çıkış Yap</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flex justify-between align-center mb-4">
+            <div>
+                <h2>Öğrenci Sıralama ve Analiz Tablosu</h2>
+                <p style="color: var(--text-secondary);" class="mt-1">Tüm öğrencilerin güncel sınav ortalamalarına göre sıralı listesi.</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="exportData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Listeyi İndir (PDF)
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Sistemdeki Öğrenci Sayısı</div>
+                <div class="stat-value" id="totalStudents">0</div>
+            </div>
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Toplam Girilen Deneme</div>
+                <div class="stat-value" id="totalExamsInSystem">0</div>
+            </div>
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Sınıf Genel Ortalaması</div>
+                <div class="stat-value" id="classAverage">-</div>
+            </div>
+        </div>
+
+        <div class="glass-panel table-container mt-4">
+            <table id="rankingTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Sıra</th>
+                        <th>Öğrenci Adı</th>
+                        <th>Kullanıcı Adı</th>
+                        <th>Girilen Sınav</th>
+                        <th>Genel Ortalama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JS ile doldurulacak -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/teacher.js"></script>
+</body>
+</html>

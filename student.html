@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Paneli - Deneme Takip Sistemi</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <nav class="navbar">
+        <a href="#" class="nav-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+            Deneme Takip
+        </a>
+        <div class="flex align-center" style="gap: 1rem;">
+            <span id="userNameDisplay" style="font-weight: 500;">Öğrenci Adı</span>
+            <button class="btn btn-outline" style="padding: 0.5rem 1rem;" onclick="logout()">Çıkış Yap</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- İstatistik Kartları -->
+        <div class="dashboard-grid">
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Son Deneme Puanı</div>
+                <div class="stat-value" id="lastExamScore">-</div>
+                <div class="stat-subtitle" id="lastExamName">Henüz veri yok</div>
+            </div>
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Genel Ortalama Puan</div>
+                <div class="stat-value" id="averageScore">-</div>
+                <div class="stat-subtitle">Tüm denemelerin ortalaması</div>
+            </div>
+            <div class="glass-panel stat-card">
+                <div class="stat-title">Girilen Deneme Sayısı</div>
+                <div class="stat-value" id="totalExams">0</div>
+                <div class="stat-subtitle">Adet</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+            <!-- Yeni Deneme Ekleme Formu -->
+            <div class="glass-panel">
+                <h3 class="mb-4">Yeni Deneme Ekle</h3>
+                <form id="addExamForm">
+                    <div class="form-group">
+                        <label>Deneme Numarası</label>
+                        <input type="number" id="examNumber" class="form-control" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Yayın Evi Adı</label>
+                        <input type="text" id="publisher" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Toplam Puan</label>
+                        <input type="number" id="totalScore" class="form-control" required min="0" max="500" step="any">
+                    </div>
+
+                    <h4 class="mt-4 mb-2" style="font-size: 1rem; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Ders Netleri</h4>
+                    
+                    <div id="subjectsContainer">
+                        <!-- Türkçe -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">Türkçe</label>
+                            <input type="number" id="turkce_d" class="form-control subject-input" placeholder="D" min="0" max="20">
+                            <input type="number" id="turkce_y" class="form-control subject-input" placeholder="Y" min="0" max="20">
+                            <input type="text" id="turkce_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                        <!-- Matematik -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">Matematik</label>
+                            <input type="number" id="mat_d" class="form-control subject-input" placeholder="D" min="0" max="20">
+                            <input type="number" id="mat_y" class="form-control subject-input" placeholder="Y" min="0" max="20">
+                            <input type="text" id="mat_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                        <!-- Fen -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">Fen Bilimleri</label>
+                            <input type="number" id="fen_d" class="form-control subject-input" placeholder="D" min="0" max="20">
+                            <input type="number" id="fen_y" class="form-control subject-input" placeholder="Y" min="0" max="20">
+                            <input type="text" id="fen_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                        <!-- Sosyal -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">Sosyal Bilgiler</label>
+                            <input type="number" id="sos_d" class="form-control subject-input" placeholder="D" min="0" max="10">
+                            <input type="number" id="sos_y" class="form-control subject-input" placeholder="Y" min="0" max="10">
+                            <input type="text" id="sos_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                        <!-- İngilizce -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">İngilizce</label>
+                            <input type="number" id="ingilizce_d" class="form-control subject-input" placeholder="D" min="0" max="10">
+                            <input type="number" id="ingilizce_y" class="form-control subject-input" placeholder="Y" min="0" max="10">
+                            <input type="text" id="ingilizce_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                        <!-- Din Kültürü -->
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: end;">
+                            <label style="grid-column: 1 / -1;">Din Kültürü</label>
+                            <input type="number" id="din_d" class="form-control subject-input" placeholder="D" min="0" max="10">
+                            <input type="number" id="din_y" class="form-control subject-input" placeholder="Y" min="0" max="10">
+                            <input type="text" id="din_n" class="form-control" placeholder="Net" readonly style="background: rgba(0,0,0,0.2);">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-2" style="width: 100%;">Denemeyi Kaydet</button>
+                </form>
+            </div>
+
+            <!-- Grafik ve Geçmiş -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <div class="glass-panel">
+                    <h3 class="mb-4">İlerleme Grafiği</h3>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel table-container">
+                    <h3 class="mb-2">Geçmiş Denemeler</h3>
+                    <table id="examsTable">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Yayın Evi</th>
+                                <th>Tarih</th>
+                                <th>Puan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Javascript ile doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/student.js"></script>
+</body>
+</html>

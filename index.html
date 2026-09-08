@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deneme Takip Sistemi</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <div class="container landing-container">
+        <div class="text-center mb-4">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem;">Deneme Takip Sistemi</h1>
+            <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+                Öğrencilerin gelişimini adım adım izleyin, analiz edin ve başarıya ulaşın. 
+                Sisteme giriş yapmak için profilinizi seçin.
+            </p>
+        </div>
+
+        <div class="login-options">
+            <a href="#" class="glass-panel login-card" onclick="openLoginModal('student')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                </svg>
+                <h3>Öğrenci Girişi</h3>
+                <p class="mt-1" style="color: var(--text-secondary); font-size: 0.9rem;">Sonuçlarınızı girin ve gelişiminizi takip edin.</p>
+            </a>
+
+            <a href="#" class="glass-panel login-card" onclick="openLoginModal('teacher')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <h3>Öğretmen Girişi</h3>
+                <p class="mt-1" style="color: var(--text-secondary); font-size: 0.9rem;">Tüm öğrencilerin başarı durumunu ve sıralamasını görün.</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="glass-panel modal-content">
+            <div class="flex justify-between align-center mb-4">
+                <h2 id="modalTitle">Giriş Yap</h2>
+                <button class="btn btn-outline" style="padding: 0.5rem;" onclick="closeLoginModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="loginForm">
+                <input type="hidden" id="loginRole" value="">
+                <div class="form-group">
+                    <label for="email">Kullanıcı Adı</label>
+                    <input type="text" id="email" class="form-control" required placeholder="ornek_kullanici">
+                </div>
+                <div class="form-group">
+                    <label for="password">Şifre</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
+                </div>
+                
+                <!-- Sadece Öğrenci Girişinde Görünecek Kayıt Ol Butonu İçin Alan -->
+                <div id="studentRegisterHint" class="mb-4 hidden" style="font-size: 0.85rem; color: var(--text-secondary);">
+                    Hesabınız yok mu? <a href="#" onclick="toggleRegister()" style="color: var(--accent-color); text-decoration: none;">Kayıt Olun</a>
+                </div>
+
+                <!-- Kayıt Ol Formu Ek Alanları (Başlangıçta Gizli) -->
+                <div id="registerFields" class="hidden">
+                    <!-- KVKK / Gizlilik gereği Ad Soyad alanı kaldırıldı. Sadece mod takibi için bu div kaldı. -->
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="submitBtn">
+                    <span>Giriş Yap</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration info overlay for the user (since it requires their real Firebase) -->
+    <div id="firebaseSetupWarning" style="display: none; position: fixed; top: 0; left: 0; width: 100%; padding: 1rem; background: #ef4444; color: white; text-align: center; z-index: 9999;">
+        <strong>Uyarı:</strong> Veritabanı bağlantısı kurulamadı. Lütfen js/firebase-config.js dosyasına kendi Firebase bilgilerinizi giriniz.
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
