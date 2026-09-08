@@ -190,3 +190,29 @@ window.exportData = function() {
         alert("PDF oluşturulurken bir hata oluştu. Lütfen sayfayı yenileyip tekrar deneyin.");
     }
 }
+
+// Şifre Değiştirme Fonksiyonu
+window.changePassword = async function() {
+    const user = auth.currentUser;
+    if (!user) return alert("Lütfen önce giriş yapın.");
+
+    const newPassword = prompt("Lütfen yeni şifrenizi girin (En az 6 karakter olmalıdır):");
+    if (!newPassword) return; // İptal'e basıldı
+
+    if (newPassword.length < 6) {
+        return alert("Şifreniz çok zayıf. En az 6 karakter olmalıdır!");
+    }
+
+    try {
+        await user.updatePassword(newPassword);
+        alert("Harika! Şifreniz başarıyla değiştirildi. Bundan sonraki girişlerinizde yeni şifrenizi kullanabilirsiniz.");
+    } catch (error) {
+        console.error("Şifre değiştirme hatası:", error);
+        // Firebase bazen uzun süre açık kalan oturumlarda güvenlik için tekrar giriş ister
+        if (error.code === 'auth/requires-recent-login') {
+            alert("Güvenlik nedeniyle şifrenizi değiştirmeden önce sistemden 'Çıkış Yap'ıp tekrar giriş yapmanız gerekmektedir.");
+        } else {
+            alert("Şifre değiştirilirken bir hata oluştu: " + error.message);
+        }
+    }
+}
