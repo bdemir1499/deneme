@@ -48,7 +48,7 @@ async function loadData() {
 
     } catch (error) {
         console.error("Veri çekme hatası:", error);
-        alert("Sistemden veriler çekilirken bir hata oluştu.");
+        alert("Sistemden veriler çekilirken bir hata oluştu.\nHATA DETAYI: " + error.message);
     }
 }
 
