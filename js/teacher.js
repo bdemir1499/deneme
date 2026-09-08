@@ -39,9 +39,6 @@ async function loadData() {
         examsSnapshot.forEach(doc => {
             allExams.push({ id: doc.id, ...doc.data() });
         });
-
-        // Önce filtreleri (Deneme No dropdown) doldur
-        populateFilters();
         
         // Tabloyu ve istatistikleri güncelle
         updateRankingTable();
@@ -52,37 +49,10 @@ async function loadData() {
     }
 }
 
-function populateFilters() {
-    const filterSelect = document.getElementById('filterExam');
-    // Mevcut seçenekleri temizle (Tümü hariç)
-    filterSelect.innerHTML = '<option value="all">Tüm Denemeler</option>';
-    
-    // Benzersiz deneme numaralarını bul
-    const uniqueExams = [...new Set(allExams.map(e => parseInt(e.examNumber)))].sort((a,b) => a - b);
-    
-    uniqueExams.forEach(num => {
-        if (!isNaN(num)) {
-            const opt = document.createElement('option');
-            opt.value = num;
-            opt.innerText = `${num}. Deneme`;
-            filterSelect.appendChild(opt);
-        }
-    });
-}
-
 function updateRankingTable() {
-    const filterVal = document.getElementById('filterExam').value;
     const tbody = document.querySelector("#rankingTable tbody");
     tbody.innerHTML = '';
     
-    let filteredExams = allExams;
-    
-    if (filterVal !== 'all') {
-        filteredExams = allExams.filter(e => parseInt(e.examNumber) === parseInt(filterVal));
-    }
-    
-    // Aynı öğrencinin aynı denemede birden fazla kaydı varsa, en yüksek puanlıyı alalım (opsiyonel mantık, ama en mantıklısı bu)
-    // XSS Koruması için HTML etiketlerini temizleme fonksiyonu
     const escapeHTML = (str) => {
         if (!str) return '';
         return String(str).replace(/[&<>'"]/g, tag => ({
@@ -94,46 +64,60 @@ function updateRankingTable() {
         }[tag]));
     };
     
+    // Öğrencilerin sınavlarını hesapla
+    const studentStats = [];
+    allStudents.forEach(student => {
+        const studentExams = allExams.filter(e => e.studentUid === student.uid);
+        const examsCount = studentExams.length;
+        let totalSum = 0;
+        studentExams.forEach(e => totalSum += e.totalScore);
+        const average = examsCount > 0 ? (totalSum / examsCount) : 0;
+        
+        studentStats.push({
+            name: student.name || 'İsimsiz',
+            username: student.username || 'bilinmiyor',
+            examsCount: examsCount,
+            average: average
+        });
+    });
+
     // Puanlara göre büyükten küçüğe sırala
-    filteredExams.sort((a, b) => b.totalScore - a.totalScore);
+    studentStats.sort((a, b) => b.average - a.average);
     
     // Tabloyu doldur
-    filteredExams.forEach((exam, index) => {
+    studentStats.forEach((stat, index) => {
         const tr = document.createElement('tr');
-        // İlk 3'e madalya koy
-        let rankStr = (index + 1).toString();
-        if (index === 0) rankStr = '🥇 1';
-        if (index === 1) rankStr = '🥈 2';
-        if (index === 2) rankStr = '🥉 3';
         
-        const safeStudentName = escapeHTML(exam.studentName || exam.studentEmail);
-        const safePublisher = escapeHTML(exam.publisher);
+        let rankStr = (index + 1).toString();
+        if (index === 0 && stat.examsCount > 0) rankStr = '🥇 1';
+        if (index === 1 && stat.examsCount > 0) rankStr = '🥈 2';
+        if (index === 2 && stat.examsCount > 0) rankStr = '🥉 3';
         
         tr.innerHTML = `
             <td>${rankStr}</td>
-            <td>${safeStudentName}</td>
-            <td>${exam.examNumber}</td>
-            <td>${safePublisher}</td>
-            <td style="font-weight: bold; color: var(--accent-color);">${exam.totalScore.toFixed(2)}</td>
+            <td>${escapeHTML(stat.name)}</td>
+            <td>@${escapeHTML(stat.username)}</td>
+            <td>${stat.examsCount}</td>
+            <td style="font-weight: bold; color: var(--accent-color);">${stat.average.toFixed(2)}</td>
         `;
         tbody.appendChild(tr);
     });
     
-    // Üst kısımdaki istatistikleri güncelle
     updateDashboardStats();
 }
 
 function updateDashboardStats() {
-    const uniqueStudentsSet = new Set(allExams.map(e => e.studentUid));
-    const uniqueExamsSet = new Set(allExams.map(e => e.examNumber));
-    
-    document.getElementById('totalStudents').innerText = uniqueStudentsSet.size;
-    document.getElementById('totalExams').innerText = uniqueExamsSet.size;
+    document.getElementById('totalStudents').innerText = allStudents.length;
+    document.getElementById('totalExamsInSystem').innerText = allExams.length;
     
     let totalScoreSum = 0;
     allExams.forEach(e => totalScoreSum += e.totalScore);
     const avg = allExams.length > 0 ? (totalScoreSum / allExams.length) : 0;
-    document.getElementById('averageScore').innerText = avg.toFixed(2);
+    
+    const classAvgEl = document.getElementById('classAverage');
+    if (classAvgEl) {
+        classAvgEl.innerText = avg.toFixed(2);
+    }
 }
 
 // Dışa Aktar Fonksiyonu (jsPDF ve jsPDF-AutoTable gerektirir)
@@ -147,8 +131,6 @@ window.exportData = function() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Türkçe karakter desteği için varsayılan fontları ayarla (jsPDF'in standart fontları TR tam desteklemez, ama en iyi çözüm helvetica'dır veya ASCII dönüştürmektir)
-        // Basit bir harf dönüşümü yapalım:
         const trMap = {
             'ç':'c', 'Ç':'C', 'ğ':'g', 'Ğ':'G', 'ı':'i', 'İ':'I', 'ö':'o', 'Ö':'O', 'ş':'s', 'Ş':'S', 'ü':'u', 'Ü':'U'
         };
@@ -157,30 +139,37 @@ window.exportData = function() {
             return str.replace(/[çÇğĞıİöÖşŞüÜ]/g, match => trMap[match]);
         };
 
-        const filterVal = document.getElementById('filterExam').value;
-        const titleText = filterVal === 'all' ? "Tum Deneme Sonuclari" : normalizeStr(filterVal + ". Deneme Sonuclari");
-        
         doc.setFontSize(18);
-        doc.text(titleText, 14, 22);
+        doc.text("Sinif Genel Siralama ve Analiz", 14, 22);
         doc.setFontSize(11);
         doc.setTextColor(100);
         
-        let filteredExams = allExams;
-        if (filterVal !== 'all') {
-            filteredExams = allExams.filter(e => parseInt(e.examNumber) === parseInt(filterVal));
-        }
-        filteredExams.sort((a, b) => b.totalScore - a.totalScore);
+        // Yeniden hesapla
+        const studentStats = [];
+        allStudents.forEach(student => {
+            const studentExams = allExams.filter(e => e.studentUid === student.uid);
+            const examsCount = studentExams.length;
+            let totalSum = 0;
+            studentExams.forEach(e => totalSum += e.totalScore);
+            studentStats.push({
+                name: student.name || 'İsimsiz',
+                username: student.username || '',
+                examsCount: examsCount,
+                average: examsCount > 0 ? (totalSum / examsCount) : 0
+            });
+        });
+        studentStats.sort((a, b) => b.average - a.average);
 
-        const tableColumn = ["Sira", "Ogrenci", "Deneme No", "Yayin", "Puan"];
+        const tableColumn = ["Sira", "Ogrenci", "Kullanici Adi", "Girilen Sinav", "Genel Ortalama"];
         const tableRows = [];
 
-        filteredExams.forEach((exam, index) => {
+        studentStats.forEach((stat, index) => {
             const rowData = [
                 (index + 1).toString(),
-                normalizeStr(exam.studentName || exam.studentEmail),
-                exam.examNumber.toString(),
-                normalizeStr(exam.publisher),
-                exam.totalScore.toFixed(2)
+                normalizeStr(stat.name),
+                "@" + normalizeStr(stat.username),
+                stat.examsCount.toString(),
+                stat.average.toFixed(2)
             ];
             tableRows.push(rowData);
         });
@@ -190,16 +179,10 @@ window.exportData = function() {
             body: tableRows,
             startY: 30,
             theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            didParseCell: function(data) {
-                // Her hücredeki olası utf-8 karakterleri son kez kontrol et
-                if (typeof data.cell.text[0] === 'string') {
-                   data.cell.text[0] = normalizeStr(data.cell.text[0]);
-                }
-            }
+            headStyles: { fillColor: [59, 130, 246] }
         });
 
-        doc.save(`sinav_sonuclari_${Date.now()}.pdf`);
+        doc.save(`sinif_analizi_${Date.now()}.pdf`);
     } catch (e) {
         console.error(e);
         alert("PDF oluşturulurken bir hata oluştu. Lütfen sayfayı yenileyip tekrar deneyin.");
