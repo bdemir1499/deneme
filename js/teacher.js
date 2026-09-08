@@ -80,7 +80,17 @@ function updateRankingTable() {
     }
     
     // Aynı öğrencinin aynı denemede birden fazla kaydı varsa, en yüksek puanlıyı alalım (opsiyonel mantık, ama en mantıklısı bu)
-    // Şimdilik direkt sıralayalım.
+    // XSS Koruması için HTML etiketlerini temizleme fonksiyonu
+    const escapeHTML = (str) => {
+        if (!str) return '';
+        return String(str).replace(/[&<>'"]/g, tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag]));
+    };
     
     // Puanlara göre büyükten küçüğe sırala
     filteredExams.sort((a, b) => b.totalScore - a.totalScore);
@@ -94,11 +104,14 @@ function updateRankingTable() {
         if (index === 1) rankStr = '🥈 2';
         if (index === 2) rankStr = '🥉 3';
         
+        const safeStudentName = escapeHTML(exam.studentName || exam.studentEmail);
+        const safePublisher = escapeHTML(exam.publisher);
+        
         tr.innerHTML = `
             <td>${rankStr}</td>
-            <td>${exam.studentName || exam.studentEmail}</td>
+            <td>${safeStudentName}</td>
             <td>${exam.examNumber}</td>
-            <td>${exam.publisher}</td>
+            <td>${safePublisher}</td>
             <td style="font-weight: bold; color: var(--accent-color);">${exam.totalScore.toFixed(2)}</td>
         `;
         tbody.appendChild(tr);

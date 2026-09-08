@@ -190,13 +190,25 @@ function updateTable(exams) {
     // Son girilen en üstte görünsün diye ters çevir
     const reversedExams = [...exams].reverse();
     
+    // XSS Koruması
+    const escapeHTML = (str) => {
+        if (!str) return '';
+        return String(str).replace(/[&<>'"]/g, tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag]));
+    };
+
     reversedExams.forEach(exam => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${exam.examNumber}</td>
-            <td>${exam.publisher}</td>
-            <td>${exam.date}</td>
-            <td style="font-weight: bold; color: var(--accent-color);">${exam.totalScore.toFixed(2)}</td>
+            <td>${escapeHTML(exam.examNumber)}</td>
+            <td>${escapeHTML(exam.publisher)}</td>
+            <td>${escapeHTML(exam.date)}</td>
+            <td style="font-weight: bold; color: var(--accent-color);">${escapeHTML(exam.totalScore.toFixed(2))}</td>
         `;
         tbody.appendChild(tr);
     });
