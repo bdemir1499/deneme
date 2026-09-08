@@ -1,3 +1,4 @@
+"use strict";
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     
@@ -71,6 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isRegisterMode) {
                     // YENİ KAYIT (Öğrenci)
+                    // Güçlü şifre kontrolü: En az 8 karakter, 1 harf, 1 rakam
+                    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+                    if (!passwordRegex.test(password)) {
+                        alert("GÜVENLİK UYARISI:\nŞifreniz çok zayıf! Lütfen en az 8 karakterden oluşan ve içinde hem HARF hem de RAKAM bulunan daha güçlü bir şifre belirleyin.");
+                        throw new Error("Şifre zayıf.");
+                    }
+
                     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                     const user = userCredential.user;
                     

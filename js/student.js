@@ -1,6 +1,8 @@
 let examChart;
 
 // Sayfa yüklendiğinde oturum kontrolü yap
+"use strict";
+
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (!user) {
