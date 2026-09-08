@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 if (isRegisterMode) {
-                    // YENİ KAYIT
+                    // YENİ KAYIT (Öğrenci)
                     // KVKK gereği ad soyad kaldırıldı.
                     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                     const user = userCredential.user;
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Firestore'a profili kaydet
                     await db.collection('users').doc(user.uid).set({
                         uid: user.uid,
-                        name: rawUsername, // Gerçek ad girmedikleri için sadece kullanıcı adı kaydedilir
+                        name: rawUsername, 
                         username: rawUsername, 
                         email: email,
                         role: role,
@@ -60,7 +60,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                 } else {
                     // GİRİŞ YAP
-                    await auth.signInWithEmailAndPassword(email, password);
+                    try {
+                        await auth.signInWithEmailAndPassword(email, password);
+                    } catch (signInError) {
+                        // Eğer giren kişi Öğretmen ise ve hesap yoksa, ona özel hesap oluşturma hakkı verelim
+                        if (role === 'teacher' && (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/invalid-login-credentials')) {
+                            const isConfirmed = confirm(`Sistemde '${rawUsername}' adında bir öğretmen hesabı bulunamadı.\n\nBu isimle YENİ BİR ÖĞRETMEN HESABI oluşturmak istiyor musunuz?`);
+                            
+                            if (isConfirmed) {
+                                // Öğrenciler öğretmen hesabı açamasın diye ufak bir güvenlik şifresi koyalım
+                                const pin = prompt("Öğretmen hesabı oluşturmak için lütfen Kurucu PIN Kodunu girin (Şifre: 1453)");
+                                if (pin === "1453") {
+                                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                                    await db.collection('users').doc(userCredential.user.uid).set({
+                                        uid: userCredential.user.uid,
+                                        name: rawUsername,
+                                        username: rawUsername,
+                                        email: email,
+                                        role: 'teacher',
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                    alert("Öğretmen hesabınız başarıyla oluşturuldu!");
+                                } else {
+                                    throw new Error("PIN Kodu Hatalı! Öğretmen hesabı oluşturulamaz.");
+                                }
+                            } else {
+                                throw signInError; // İptale basarsa normal hatayı fırlat
+                            }
+                        } else {
+                            throw signInError; // Öğrenciyse veya başka hataysa normal hatayı fırlat
+                        }
+                    }
                 }
                 
                 // İşlem (Kayıt veya Giriş) tamamen bittikten sonra yönlendirmeyi yapıyoruz
