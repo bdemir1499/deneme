@@ -43,34 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const isRegisterMode = !document.getElementById('registerFields').classList.contains('hidden');
             
             try {
-                // GİZLİ KURUCU MODU (Sadece şifreyi ve kullanıcı adını tam bilenler yeni öğretmen ekleyebilir)
-                if (role === 'teacher' && rawUsername === 'yonetim' && password === 'kurucu2026') {
-                    const newUsername = prompt("Gizli Kurucu Modu: Yeni öğretmenin 'Kullanıcı Adı' ne olsun?");
-                    if (!newUsername) throw new Error("İptal edildi.");
-                    
-                    const newPassword = prompt(`'${newUsername}' için şifre belirleyin (En az 6 karakter):`);
-                    if (!newPassword || newPassword.length < 6) throw new Error("Şifre çok kısa veya iptal edildi.");
-                    
-                    const sanitizedUsernameForEmail = newUsername.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-                    const newEmail = sanitizedUsernameForEmail + window.FAKE_DOMAIN;
-                    const userCredential = await auth.createUserWithEmailAndPassword(newEmail, newPassword);
-                    
-                    await db.collection('users').doc(userCredential.user.uid).set({
-                        uid: userCredential.user.uid,
-                        name: newUsername,
-                        username: newUsername.toLowerCase(),
-                        email: newEmail,
-                        role: 'teacher',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    alert(`BAŞARILI! '${newUsername}' adında yeni bir öğretmen hesabı oluşturuldu.\nŞimdi bu yeni bilgilerle giriş yapabilirsiniz.`);
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                    window.isFormSubmitting = false;
-                    return; // Normal işleme devam etme, burada dur.
-                }
-
                 if (isRegisterMode) {
                     // YENİ KAYIT (Öğrenci)
                     // Güçlü şifre kontrolü: En az 8 karakter, 1 harf, 1 rakam
