@@ -120,12 +120,19 @@ window.closeLoginModal = function() {
 window.toggleRegister = function() {
     const fields = document.getElementById('registerFields');
     const btn = document.getElementById('submitBtn').querySelector('span');
+    const title = document.getElementById('modalTitle');
+    const hint = document.getElementById('studentRegisterHint');
+
     if (fields.classList.contains('hidden')) {
         fields.classList.remove('hidden');
-        btn.innerText = 'Kayıt Ol';
+        btn.innerText = 'Kayıt İşlemini Tamamla';
+        title.innerText = 'Yeni Kayıt Oluştur';
+        hint.innerHTML = 'Zaten hesabınız var mı? <a href="#" onclick="toggleRegister()" style="color: var(--accent-color); text-decoration: none;">Giriş Yapın</a>';
     } else {
         fields.classList.add('hidden');
         btn.innerText = 'Giriş Yap';
+        title.innerText = 'Öğrenci Girişi';
+        hint.innerHTML = 'Hesabınız yok mu? <a href="#" onclick="toggleRegister()" style="color: var(--accent-color); text-decoration: none;">Kayıt Olun</a>';
     }
 }
 
