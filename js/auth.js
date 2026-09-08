@@ -42,13 +42,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const isRegisterMode = !document.getElementById('registerFields').classList.contains('hidden');
             
             try {
+                // GİZLİ KURUCU MODU (Sadece şifreyi ve kullanıcı adını tam bilenler yeni öğretmen ekleyebilir)
+                if (role === 'teacher' && rawUsername === 'yonetim' && password === 'kurucu2026') {
+                    const newUsername = prompt("Gizli Kurucu Modu: Yeni öğretmenin 'Kullanıcı Adı' ne olsun?");
+                    if (!newUsername) throw new Error("İptal edildi.");
+                    
+                    const newPassword = prompt(`'${newUsername}' için şifre belirleyin (En az 6 karakter):`);
+                    if (!newPassword || newPassword.length < 6) throw new Error("Şifre çok kısa veya iptal edildi.");
+                    
+                    const newEmail = newUsername.toLowerCase() + window.FAKE_DOMAIN;
+                    const userCredential = await auth.createUserWithEmailAndPassword(newEmail, newPassword);
+                    
+                    await db.collection('users').doc(userCredential.user.uid).set({
+                        uid: userCredential.user.uid,
+                        name: newUsername,
+                        username: newUsername.toLowerCase(),
+                        email: newEmail,
+                        role: 'teacher',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    alert(`BAŞARILI! '${newUsername}' adında yeni bir öğretmen hesabı oluşturuldu.\nŞimdi bu yeni bilgilerle giriş yapabilirsiniz.`);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    window.isFormSubmitting = false;
+                    return; // Normal işleme devam etme, burada dur.
+                }
+
                 if (isRegisterMode) {
                     // YENİ KAYIT (Öğrenci)
-                    // KVKK gereği ad soyad kaldırıldı.
                     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                     const user = userCredential.user;
                     
-                    // Firestore'a profili kaydet
                     await db.collection('users').doc(user.uid).set({
                         uid: user.uid,
                         name: rawUsername, 
@@ -59,38 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                 } else {
-                    // GİRİŞ YAP
-                    try {
-                        await auth.signInWithEmailAndPassword(email, password);
-                    } catch (signInError) {
-                        // Eğer giren kişi Öğretmen ise ve hesap yoksa, ona özel hesap oluşturma hakkı verelim
-                        if (role === 'teacher' && (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/invalid-login-credentials')) {
-                            const isConfirmed = confirm(`Sistemde '${rawUsername}' adında bir öğretmen hesabı bulunamadı.\n\nBu isimle YENİ BİR ÖĞRETMEN HESABI oluşturmak istiyor musunuz?`);
-                            
-                            if (isConfirmed) {
-                                // Öğrenciler öğretmen hesabı açamasın diye ufak bir güvenlik şifresi koyalım
-                                const pin = prompt("Öğretmen hesabı oluşturmak için lütfen Kurucu PIN Kodunu girin:");
-                                if (pin === "1453") {
-                                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                                    await db.collection('users').doc(userCredential.user.uid).set({
-                                        uid: userCredential.user.uid,
-                                        name: rawUsername,
-                                        username: rawUsername,
-                                        email: email,
-                                        role: 'teacher',
-                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                    });
-                                    alert("Öğretmen hesabınız başarıyla oluşturuldu!");
-                                } else {
-                                    throw new Error("PIN Kodu Hatalı! Öğretmen hesabı oluşturulamaz.");
-                                }
-                            } else {
-                                throw signInError; // İptale basarsa normal hatayı fırlat
-                            }
-                        } else {
-                            throw signInError; // Öğrenciyse veya başka hataysa normal hatayı fırlat
-                        }
-                    }
+                    // GİRİŞ YAP (Öğrenci veya var olan Öğretmen)
+                    await auth.signInWithEmailAndPassword(email, password);
                 }
                 
                 // İşlem (Kayıt veya Giriş) tamamen bittikten sonra yönlendirmeyi yapıyoruz
@@ -107,9 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
             } catch (error) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+                if (error.message === "İptal edildi." || error.message === "Şifre çok kısa veya iptal edildi.") {
+                    alert(error.message);
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
                     if (!isRegisterMode) {
-                        alert("Giriş Hatası: Kullanıcı adı veya şifre hatalı. (Hesabınız yoksa önce Kayıt Olun)");
+                        alert("Giriş Hatası: Kullanıcı adı veya şifre hatalı.");
                     } else {
                         alert("Kayıt Hatası: Bu isimde bir kullanıcı zaten olabilir veya şifre geçersiz.");
                     }
