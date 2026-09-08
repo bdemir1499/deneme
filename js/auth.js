@@ -51,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const newPassword = prompt(`'${newUsername}' için şifre belirleyin (En az 6 karakter):`);
                     if (!newPassword || newPassword.length < 6) throw new Error("Şifre çok kısa veya iptal edildi.");
                     
-                    const newEmail = newUsername.toLowerCase() + window.FAKE_DOMAIN;
+                    const sanitizedUsernameForEmail = newUsername.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+                    const newEmail = sanitizedUsernameForEmail + window.FAKE_DOMAIN;
                     const userCredential = await auth.createUserWithEmailAndPassword(newEmail, newPassword);
                     
                     await db.collection('users').doc(userCredential.user.uid).set({
