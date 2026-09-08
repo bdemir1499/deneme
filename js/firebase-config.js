@@ -1,5 +1,5 @@
 // OLTALAMA (PHISHING) KORUMASI: Site kopyalanırsa çalışmayı durdur
-const allowedDomains = ["bdemir1499.github.io", "localhost", "127.0.0.1", ""];
+const allowedDomains = ["bdemir1499.github.io"];
 if (!allowedDomains.includes(window.location.hostname)) {
     document.documentElement.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#ff4c4c; color:white; font-family:sans-serif; text-align:center; padding: 20px;">
