@@ -108,7 +108,10 @@ function updateRankingTable() {
 
 function updateDashboardStats() {
     document.getElementById('totalStudents').innerText = allStudents.length;
-    document.getElementById('totalExamsInSystem').innerText = allExams.length;
+    
+    // Benzersiz deneme sayısını (Deneme 1, Deneme 2 vb.) hesapla
+    const uniqueExamsSet = new Set(allExams.map(e => e.examNumber));
+    document.getElementById('totalExamsInSystem').innerText = uniqueExamsSet.size;
     
     let totalScoreSum = 0;
     allExams.forEach(e => totalScoreSum += e.totalScore);
