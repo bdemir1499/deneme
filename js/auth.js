@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             if (isConfirmed) {
                                 // Öğrenciler öğretmen hesabı açamasın diye ufak bir güvenlik şifresi koyalım
-                                const pin = prompt("Öğretmen hesabı oluşturmak için lütfen Kurucu PIN Kodunu girin (Şifre: 1453)");
+                                const pin = prompt("Öğretmen hesabı oluşturmak için lütfen Kurucu PIN Kodunu girin:");
                                 if (pin === "1453") {
                                     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                                     await db.collection('users').doc(userCredential.user.uid).set({
