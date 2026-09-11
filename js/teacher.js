@@ -110,6 +110,13 @@ window.approveExam = async function(examId) {
     if(!confirm("Bu sınavı onaylamak istediğinize emin misiniz? Onaylandığında sıralama tablosuna eklenecektir.")) return;
     
     try {
+        const examDoc = await db.collection('exams').doc(examId).get();
+        if(examDoc.exists) {
+            if (examDoc.data().studentUid === 'unknown') {
+                alert("Lütfen önce 'Düzenle' butonuna basarak bu sınavı sınıfınızdaki gerçek bir öğrenciyle eşleştirin!");
+                return;
+            }
+        }
         await db.collection('exams').doc(examId).update({
             status: 'approved'
         });
@@ -464,6 +471,8 @@ async function parseTextAndMatch(text) {
                 prev4 + " " + prev3 + " " + prev2
             ];
             
+            let bestMatch = null;
+            
             allStudents.forEach(student => {
                 const normalizedStudentName = normalizeForMatch(student.name);
                 const normalizedUsername = normalizeForMatch(student.username);
@@ -476,28 +485,55 @@ async function parseTextAndMatch(text) {
                     const sim2 = similarity(normalizedCombo, normalizedUsername);
                     const maxSim = Math.max(sim1, sim2);
                     
-                    if (maxSim > 0.8) { // %80 benzerlik
-                        potentialMatches.push({
+                    if (!bestMatch || maxSim > bestMatch.similarity) {
+                        bestMatch = {
                             student: student,
                             score: score,
                             similarity: maxSim,
                             combo: combo
-                        });
+                        };
                     }
                 });
             });
+            
+            if (bestMatch && bestMatch.similarity > 0.8) {
+                potentialMatches.push(bestMatch);
+            } else {
+                // Eşleşme %80'den küçükse Bilinmeyen Öğrenci olarak ekle
+                // PDF'teki ismi tahmin et (rakam olmayan kelimeleri al)
+                let rawName = [prev3, prev2, prev1].filter(w => !/^[\d.,]+$/.test(w)).join(" ").trim();
+                if(!rawName) rawName = prev2 + " " + prev1; 
+                
+                potentialMatches.push({
+                    student: { uid: 'unknown', name: 'Bilinmeyen (' + rawName + ')', email: '' },
+                    score: score,
+                    similarity: 0,
+                    combo: rawName
+                });
+            }
         }
     }
     
     // Aynı öğrenci için birden fazla eşleşme olduysa en yüksek benzerliği seç
     const finalMatches = {};
+    const unknownMatches = [];
+    const unknownSeen = new Set();
+    
     potentialMatches.forEach(match => {
-        if (!finalMatches[match.student.uid] || finalMatches[match.student.uid].similarity < match.similarity) {
-            finalMatches[match.student.uid] = match;
+        if (match.student.uid === 'unknown') {
+            const key = match.combo + "_" + match.score;
+            if (!unknownSeen.has(key)) {
+                unknownSeen.add(key);
+                unknownMatches.push(match);
+            }
+        } else {
+            if (!finalMatches[match.student.uid] || finalMatches[match.student.uid].similarity < match.similarity) {
+                finalMatches[match.student.uid] = match;
+            }
         }
     });
     
-    const matchedArray = Object.values(finalMatches);
+    const matchedArray = Object.values(finalMatches).concat(unknownMatches);
     
     if (matchedArray.length === 0) {
         alert("PDF okundu ancak sistemdeki öğrencilerle eşleşen bir not bulunamadı. Lütfen PDF formatını kontrol edin.");
