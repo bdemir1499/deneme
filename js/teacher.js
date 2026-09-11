@@ -300,3 +300,188 @@ window.changePassword = async function() {
         }
     }
 }
+
+// --- AKILLI PDF OKUYUCU VE EŞLEŞTİRME (LOCAL) ---
+
+// Levenshtein Mesafe Algoritması
+function levenshtein(a, b) {
+    const matrix = [];
+    let i, j;
+    for (i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (i = 1; i <= b.length; i++) {
+        for (j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+// Benzerlik Oranı (Yüzde)
+function similarity(s1, s2) {
+    let longer = s1, shorter = s2;
+    if (s1.length < s2.length) { longer = s2; shorter = s1; }
+    let longerLength = longer.length;
+    if (longerLength === 0) return 1.0;
+    return (longerLength - levenshtein(longer, shorter)) / parseFloat(longerLength);
+}
+
+// Türkçe karakter dönüşümü
+function normalizeForMatch(str) {
+    if (!str) return '';
+    return str.toLowerCase()
+        .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+        .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u')
+        .replace(/[^a-z0-9]/g, '');
+}
+
+window.handlePDFUpload = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const btnText = document.getElementById('pdfUploadLabelText');
+    const originalText = btnText.innerText;
+    btnText.innerText = "Okunuyor...";
+    
+    try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        
+        const fileReader = new FileReader();
+        fileReader.onload = async function() {
+            const typedarray = new Uint8Array(this.result);
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            let fullText = "";
+            
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + "\n";
+            }
+            
+            parseTextAndMatch(fullText);
+            btnText.innerText = originalText;
+            event.target.value = '';
+        };
+        fileReader.readAsArrayBuffer(file);
+    } catch (error) {
+        console.error("PDF Okuma Hatası:", error);
+        alert("PDF okunamadı. Lütfen geçerli bir PDF dosyası seçin.");
+        btnText.innerText = originalText;
+    }
+}
+
+async function parseTextAndMatch(text) {
+    const words = text.split(/\s+/);
+    let potentialMatches = [];
+    
+    for (let i = 0; i < words.length; i++) {
+        // Puanı bul (100 ile 500 arası)
+        const numMatch = words[i].match(/^([1-5]\d{2}(?:[.,]\d+)?)$/);
+        if (numMatch) {
+            const score = parseFloat(numMatch[1].replace(',', '.'));
+            
+            // Kendinden önceki 3 kelimeyi alıp isim kombinasyonları oluştur
+            const prev1 = words[i-1] || '';
+            const prev2 = words[i-2] || '';
+            const prev3 = words[i-3] || '';
+            
+            const nameCombos = [
+                prev2 + " " + prev1,
+                prev3 + " " + prev2 + " " + prev1,
+                prev1
+            ];
+            
+            allStudents.forEach(student => {
+                const normalizedStudentName = normalizeForMatch(student.name);
+                const normalizedUsername = normalizeForMatch(student.username);
+                
+                nameCombos.forEach(combo => {
+                    const normalizedCombo = normalizeForMatch(combo);
+                    if (normalizedCombo.length < 3) return;
+                    
+                    const sim1 = similarity(normalizedCombo, normalizedStudentName);
+                    const sim2 = similarity(normalizedCombo, normalizedUsername);
+                    const maxSim = Math.max(sim1, sim2);
+                    
+                    if (maxSim > 0.8) { // %80 benzerlik
+                        potentialMatches.push({
+                            student: student,
+                            score: score,
+                            similarity: maxSim,
+                            combo: combo
+                        });
+                    }
+                });
+            });
+        }
+    }
+    
+    // Aynı öğrenci için birden fazla eşleşme olduysa en yüksek benzerliği seç
+    const finalMatches = {};
+    potentialMatches.forEach(match => {
+        if (!finalMatches[match.student.uid] || finalMatches[match.student.uid].similarity < match.similarity) {
+            finalMatches[match.student.uid] = match;
+        }
+    });
+    
+    const matchedArray = Object.values(finalMatches);
+    
+    if (matchedArray.length === 0) {
+        alert("PDF okundu ancak sistemdeki öğrencilerle eşleşen bir not bulunamadı. Lütfen PDF formatını kontrol edin.");
+        return;
+    }
+    
+    const confirmMsg = `${matchedArray.length} öğrencinin notu başarıyla eşleştirildi!\nÖrnek: ${matchedArray[0].student.name} -> ${matchedArray[0].score} Puan\n\nBu notlar 'Onay Bekleyen Sınavlar' listesine aktarılsın mı?`;
+    
+    if (confirm(confirmMsg)) {
+        uploadMatchesToFirestore(matchedArray);
+    }
+}
+
+async function uploadMatchesToFirestore(matches) {
+    const examNumber = prompt("Bu denemenin numarası kaç? (Örn: 5)");
+    if (!examNumber) return;
+    
+    const publisher = prompt("Bu denemenin yayın evi nedir? (Örn: Özdebir)");
+    if (!publisher) return;
+    
+    const dateStr = new Date().toLocaleDateString('tr-TR');
+    
+    const btnText = document.getElementById('pdfUploadLabelText');
+    const originalText = btnText.innerText;
+    btnText.innerText = "Yükleniyor...";
+    
+    try {
+        const batch = db.batch(); // Toplu işlem (Hız için)
+        
+        matches.forEach(match => {
+            const docRef = db.collection('exams').doc();
+            batch.set(docRef, {
+                studentUid: match.student.uid,
+                studentName: match.student.name || match.student.username,
+                studentEmail: match.student.email,
+                examNumber: examNumber,
+                publisher: publisher,
+                date: dateStr,
+                status: 'pending',
+                totalScore: match.score,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                results: {} // Sadece toplam puan
+            });
+        });
+        
+        await batch.commit();
+        alert("Harika! Tüm eşleşen notlar 'Onay Bekleyen Sınavlar' listesine aktarıldı. Oradan kontrol edip onaylayabilirsiniz.");
+        loadData(); // Sayfayı yenile
+    } catch (error) {
+        console.error("Toplu yükleme hatası:", error);
+        alert("Yükleme sırasında hata oluştu: " + error.message);
+    } finally {
+        btnText.innerText = originalText;
+    }
+}

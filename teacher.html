@@ -52,7 +52,14 @@
                 <h2>Öğrenci Sıralama ve Analiz Tablosu</h2>
                 <p style="color: var(--text-secondary);" class="mt-1">Tüm öğrencilerin güncel sınav ortalamalarına göre sıralı listesi.</p>
             </div>
-            <div>
+            <div class="flex" style="gap: 1rem;">
+                <label class="btn btn-outline" style="cursor: pointer; border-color: var(--accent-color); color: var(--accent-color); padding: 0.5rem 1rem;">
+                    <input type="file" id="pdfUploadInput" accept="application/pdf" style="display: none;" onchange="handlePDFUpload(event)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span id="pdfUploadLabelText">Akıllı PDF Oku</span>
+                </label>
                 <button class="btn btn-primary" onclick="exportData()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -97,10 +104,12 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- PDF Okuma için Mozilla pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js"></script>
-    <script src="js/teacher.js?v=2"></script>
+    <script src="js/teacher.js?v=3"></script>
 </body>
 </html>
