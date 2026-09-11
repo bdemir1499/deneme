@@ -1,6 +1,7 @@
 "use strict";
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.reset(); // Tarayıcının eski şifreleri kutuda tutmasını engelle
     
     // Oturum durumunu dinle (zaten giriş yapmışsa otomatik yönlendir)
     auth.onAuthStateChanged(user => {
