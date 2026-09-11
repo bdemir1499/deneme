@@ -111,6 +111,7 @@ async function saveExam(e) {
             examNumber: document.getElementById('examNumber').value,
             publisher: document.getElementById('publisher').value,
             date: dateStr,
+            status: 'pending',
             totalScore: parseFloat(document.getElementById('totalScore').value),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             results: {

@@ -1,4 +1,6 @@
 let allExams = [];
+let approvedExams = [];
+let pendingExams = [];
 let allStudents = [];
 
 // Sayfa yüklendiğinde oturum kontrolü yap
@@ -36,11 +38,23 @@ async function loadData() {
         // 2. Sınavları çek
         const examsSnapshot = await db.collection('exams').get();
         allExams = [];
+        approvedExams = [];
+        pendingExams = [];
+        
         examsSnapshot.forEach(doc => {
-            allExams.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            const exam = { id: doc.id, ...data };
+            allExams.push(exam);
+            
+            if (data.status === 'pending') {
+                pendingExams.push(exam);
+            } else {
+                approvedExams.push(exam);
+            }
         });
         
-        // Tabloyu ve istatistikleri güncelle
+        // Tabloları ve istatistikleri güncelle
+        updatePendingTable();
         updateRankingTable();
 
     } catch (error) {
@@ -49,8 +63,77 @@ async function loadData() {
     }
 }
 
+function updatePendingTable() {
+    const tbody = document.querySelector("#pendingTable tbody");
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (pendingExams.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-secondary); padding: 1.5rem;">Onay bekleyen sınav bulunmuyor. 🎉</td></tr>';
+        return;
+    }
+
+    const escapeHTML = (str) => {
+        if (!str) return '';
+        return String(str).replace(/[&<>'"]/g, tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag]));
+    };
+
+    pendingExams.forEach(exam => {
+        const tr = document.createElement('tr');
+        const studentName = escapeHTML(exam.studentName || exam.studentEmail);
+        
+        tr.innerHTML = `
+            <td>${escapeHTML(exam.date || '')}</td>
+            <td>${studentName}</td>
+            <td>${escapeHTML(exam.examNumber)}</td>
+            <td>${escapeHTML(exam.publisher)}</td>
+            <td style="font-weight: bold; color: var(--accent-color);">${exam.totalScore.toFixed(2)}</td>
+            <td>
+                <div class="flex" style="gap: 0.5rem; justify-content: flex-start;">
+                    <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="approveExam('${exam.id}')">Onayla</button>
+                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #ef4444; color: #ef4444;" onclick="rejectExam('${exam.id}')">Reddet</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+window.approveExam = async function(examId) {
+    if(!confirm("Bu sınavı onaylamak istediğinize emin misiniz? Onaylandığında sıralama tablosuna eklenecektir.")) return;
+    
+    try {
+        await db.collection('exams').doc(examId).update({
+            status: 'approved'
+        });
+        loadData(); // Verileri yeniden yükle
+    } catch (error) {
+        console.error("Onaylama hatası:", error);
+        alert("Sınav onaylanırken hata oluştu. Firebase kurallarınızı (update yetkisini) kontrol edin!\n" + error.message);
+    }
+}
+
+window.rejectExam = async function(examId) {
+    if(!confirm("Bu sınavı REDDETMEK ve sistemden KALICI OLARAK SİLMEK istediğinize emin misiniz?")) return;
+    
+    try {
+        await db.collection('exams').doc(examId).delete();
+        loadData(); // Verileri yeniden yükle
+    } catch (error) {
+        console.error("Silme hatası:", error);
+        alert("Sınav silinirken hata oluştu. Firebase kurallarınızı (delete yetkisini) kontrol edin!\n" + error.message);
+    }
+}
+
 function updateRankingTable() {
     const tbody = document.querySelector("#rankingTable tbody");
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     const escapeHTML = (str) => {
@@ -64,10 +147,10 @@ function updateRankingTable() {
         }[tag]));
     };
     
-    // Öğrencilerin sınavlarını hesapla
+    // Öğrencilerin sınavlarını hesapla (Sadece Onaylılar)
     const studentStats = [];
     allStudents.forEach(student => {
-        const studentExams = allExams.filter(e => e.studentUid === student.uid);
+        const studentExams = approvedExams.filter(e => e.studentUid === student.uid);
         const examsCount = studentExams.length;
         let totalSum = 0;
         studentExams.forEach(e => totalSum += e.totalScore);
@@ -109,13 +192,13 @@ function updateRankingTable() {
 function updateDashboardStats() {
     document.getElementById('totalStudents').innerText = allStudents.length;
     
-    // Benzersiz deneme sayısını (Deneme 1, Deneme 2 vb.) hesapla
-    const uniqueExamsSet = new Set(allExams.map(e => e.examNumber));
+    // Benzersiz deneme sayısını (Deneme 1, Deneme 2 vb.) hesapla (Sadece Onaylılar)
+    const uniqueExamsSet = new Set(approvedExams.map(e => e.examNumber));
     document.getElementById('totalExamsInSystem').innerText = uniqueExamsSet.size;
     
     let totalScoreSum = 0;
-    allExams.forEach(e => totalScoreSum += e.totalScore);
-    const avg = allExams.length > 0 ? (totalScoreSum / allExams.length) : 0;
+    approvedExams.forEach(e => totalScoreSum += e.totalScore);
+    const avg = approvedExams.length > 0 ? (totalScoreSum / approvedExams.length) : 0;
     
     const classAvgEl = document.getElementById('classAverage');
     if (classAvgEl) {
@@ -125,7 +208,7 @@ function updateDashboardStats() {
 
 // Dışa Aktar Fonksiyonu (jsPDF ve jsPDF-AutoTable gerektirir)
 window.exportData = function() {
-    if (allExams.length === 0) {
+    if (approvedExams.length === 0) {
         alert("Dışa aktarılacak veri bulunamadı.");
         return;
     }
@@ -147,10 +230,10 @@ window.exportData = function() {
         doc.setFontSize(11);
         doc.setTextColor(100);
         
-        // Yeniden hesapla
+        // Yeniden hesapla (Sadece Onaylılar)
         const studentStats = [];
         allStudents.forEach(student => {
-            const studentExams = allExams.filter(e => e.studentUid === student.uid);
+            const studentExams = approvedExams.filter(e => e.studentUid === student.uid);
             const examsCount = studentExams.length;
             let totalSum = 0;
             studentExams.forEach(e => totalSum += e.totalScore);

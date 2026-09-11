@@ -22,7 +22,32 @@
     </nav>
 
     <div class="container">
-        <div class="flex justify-between align-center mb-4">
+        <div class="flex justify-between align-center mb-4 mt-8">
+            <div>
+                <h2>Onay Bekleyen Sınavlar</h2>
+                <p style="color: var(--text-secondary);" class="mt-1">Öğrencilerin girdiği ve sıralamaya katılmak için onayınızı bekleyen sınavlar.</p>
+            </div>
+        </div>
+
+        <div class="glass-panel table-container mb-4">
+            <table id="pendingTable">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Öğrenci Adı</th>
+                        <th>Deneme No</th>
+                        <th>Yayın</th>
+                        <th>Puan</th>
+                        <th style="width: 200px;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JS ile doldurulacak -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-between align-center mb-4 mt-8">
             <div>
                 <h2>Öğrenci Sıralama ve Analiz Tablosu</h2>
                 <p style="color: var(--text-secondary);" class="mt-1">Tüm öğrencilerin güncel sınav ortalamalarına göre sıralı listesi.</p>
