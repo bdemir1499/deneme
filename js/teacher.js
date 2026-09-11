@@ -97,6 +97,7 @@ function updatePendingTable() {
             <td>
                 <div class="flex" style="gap: 0.5rem; justify-content: flex-start;">
                     <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="approveExam('${exam.id}')">Onayla</button>
+                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #eab308; color: #eab308;" onclick="editExam('${exam.id}', ${exam.totalScore})">Düzenle</button>
                     <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #ef4444; color: #ef4444;" onclick="rejectExam('${exam.id}')">Reddet</button>
                 </div>
             </td>
@@ -128,6 +129,26 @@ window.rejectExam = async function(examId) {
     } catch (error) {
         console.error("Silme hatası:", error);
         alert("Sınav silinirken hata oluştu. Firebase kurallarınızı (delete yetkisini) kontrol edin!\n" + error.message);
+    }
+}
+
+window.editExam = async function(examId, currentScore) {
+    const newScore = prompt("Öğrencinin gerçek (doğrulanmış) toplam puanını girin:", currentScore);
+    if (newScore === null || newScore.trim() === '') return;
+    
+    const parsedScore = parseFloat(newScore.replace(',', '.'));
+    if (isNaN(parsedScore)) {
+        return alert("Lütfen geçerli bir puan (sayı) girin.");
+    }
+
+    try {
+        await db.collection('exams').doc(examId).update({
+            totalScore: parsedScore
+        });
+        loadData(); // Tabloyu yenile
+    } catch (error) {
+        console.error("Düzenleme hatası:", error);
+        alert("Puan güncellenirken hata oluştu: " + error.message);
     }
 }
 
@@ -385,15 +406,22 @@ async function parseTextAndMatch(text) {
         if (numMatch) {
             const score = parseFloat(numMatch[1].replace(',', '.'));
             
-            // Kendinden önceki 3 kelimeyi alıp isim kombinasyonları oluştur
+            // Kendinden önceki 4 kelimeyi alıp isim kombinasyonları oluştur
             const prev1 = words[i-1] || '';
             const prev2 = words[i-2] || '';
             const prev3 = words[i-3] || '';
+            const prev4 = words[i-4] || '';
             
+            // PDF'te ismin nerede olacağını bilemeyiz (arada Net, Doğru sayısı vs olabilir)
+            // O yüzden her ihtimali deniyoruz.
             const nameCombos = [
+                prev1,
+                prev2,
+                prev3,
                 prev2 + " " + prev1,
+                prev3 + " " + prev2,
                 prev3 + " " + prev2 + " " + prev1,
-                prev1
+                prev4 + " " + prev3 + " " + prev2
             ];
             
             allStudents.forEach(student => {
