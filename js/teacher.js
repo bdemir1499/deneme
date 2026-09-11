@@ -97,7 +97,7 @@ function updatePendingTable() {
             <td>
                 <div class="flex" style="gap: 0.5rem; justify-content: flex-start;">
                     <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="approveExam('${exam.id}')">Onayla</button>
-                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #eab308; color: #eab308;" onclick="editExam('${exam.id}', ${exam.totalScore})">Düzenle</button>
+                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #eab308; color: #eab308;" onclick="openEditModal('${exam.id}', '${exam.studentUid}', ${exam.totalScore})">Düzenle</button>
                     <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; border-color: #ef4444; color: #ef4444;" onclick="rejectExam('${exam.id}')">Reddet</button>
                 </div>
             </td>
@@ -132,23 +132,63 @@ window.rejectExam = async function(examId) {
     }
 }
 
-window.editExam = async function(examId, currentScore) {
-    const newScore = prompt("Öğrencinin gerçek (doğrulanmış) toplam puanını girin:", currentScore);
-    if (newScore === null || newScore.trim() === '') return;
+window.openEditModal = function(examId, currentStudentUid, currentScore) {
+    const modal = document.getElementById('editExamModal');
+    const select = document.getElementById('editStudentSelect');
+    const scoreInput = document.getElementById('editExamScore');
+    const idInput = document.getElementById('editExamId');
     
-    const parsedScore = parseFloat(newScore.replace(',', '.'));
-    if (isNaN(parsedScore)) {
-        return alert("Lütfen geçerli bir puan (sayı) girin.");
-    }
+    // Select içini doldur
+    select.innerHTML = '';
+    allStudents.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.uid;
+        option.textContent = student.name || student.username;
+        if (student.uid === currentStudentUid) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    
+    scoreInput.value = currentScore;
+    idInput.value = examId;
+    
+    modal.style.display = 'flex';
+}
 
+window.closeEditModal = function() {
+    document.getElementById('editExamModal').style.display = 'none';
+}
+
+window.saveEditedExam = async function() {
+    const examId = document.getElementById('editExamId').value;
+    const scoreInput = document.getElementById('editExamScore').value;
+    const select = document.getElementById('editStudentSelect');
+    const selectedUid = select.value;
+    const selectedName = select.options[select.selectedIndex].text;
+    
+    const parsedScore = parseFloat(scoreInput);
+    if (isNaN(parsedScore)) {
+        return alert("Lütfen geçerli bir puan girin.");
+    }
+    
+    const btn = event.target;
+    const origText = btn.innerText;
+    btn.innerText = "Kaydediliyor...";
+    
     try {
         await db.collection('exams').doc(examId).update({
+            studentUid: selectedUid,
+            studentName: selectedName,
             totalScore: parsedScore
         });
+        closeEditModal();
         loadData(); // Tabloyu yenile
     } catch (error) {
         console.error("Düzenleme hatası:", error);
         alert("Puan güncellenirken hata oluştu: " + error.message);
+    } finally {
+        if(btn) btn.innerText = origText;
     }
 }
 

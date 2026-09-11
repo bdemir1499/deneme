@@ -102,6 +102,32 @@
         </div>
     </div>
 
+    <!-- Düzenleme Modalı -->
+    <div id="editExamModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; padding: 1rem;">
+        <div style="background: var(--bg-primary); padding: 2rem; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--text-primary);">Sınavı Düzenle</h3>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Doğru Öğrenciyi Seçin</label>
+                <select id="editStudentSelect" class="input" style="width: 100%;">
+                    <!-- Javascript ile doldurulacak -->
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Toplam Puan</label>
+                <input type="number" id="editExamScore" class="input" style="width: 100%;" step="0.01" min="0" max="500">
+            </div>
+            
+            <input type="hidden" id="editExamId">
+            
+            <div class="flex" style="gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="closeEditModal()">İptal</button>
+                <button class="btn btn-primary" onclick="saveEditedExam()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <!-- PDF Okuma için Mozilla pdf.js -->
